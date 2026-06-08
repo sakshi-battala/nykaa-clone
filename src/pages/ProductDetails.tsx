@@ -16,6 +16,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { labelForType } from "../utils/categories";
 import { useApp } from "../context/AppContext";
 import { cn } from "../lib/utils";
+import { getProductImage } from "../utils/fallbackImages";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -82,19 +83,16 @@ export default function ProductDetails() {
 
       <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
         <div className="bg-muted rounded-2xl overflow-hidden">
-          {product.image_link ? (
-            <img
-              src={product.image_link}
-              alt={product.name}
-              className="w-full aspect-square object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-                const fallback = e.currentTarget
-                  .nextElementSibling as HTMLElement;
-                if (fallback) fallback.style.display = "flex";
-              }}
-            />
-          ) : null}
+          <img
+            src={getProductImage(product)}
+            alt={product.name}
+            className="w-full aspect-square object-cover"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src =
+                "https://placehold.co/800x800?text=Beauty+Product";
+            }}
+          />
 
           <div className="hidden w-full aspect-square items-center justify-center text-muted-foreground text-lg font-medium">
             No Image Available

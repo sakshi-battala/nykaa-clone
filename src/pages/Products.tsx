@@ -1,12 +1,11 @@
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search, RotateCcw, ChevronDown } from "lucide-react";
 import { fetchProducts } from "../services/api";
 import { ProductCard } from "../components/ProductCard";
-import { cn } from "../lib/utils";
 
-const PAGE_SIZE = 12;
+// const PAGE_SIZE = 12;
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,7 +29,6 @@ export default function Products() {
   const [maxPrice, setMaxPrice] = useState(100);
   const [minRating, setMinRating] = useState(0);
   const [sort, setSort] = useState("featured");
-  const [page, setPage] = useState(1);
 
   const brands = useMemo<string[]>(
     () =>
@@ -69,12 +67,11 @@ export default function Products() {
     setCategory("all");
     setMaxPrice(100);
     setMinRating(0);
-    setPage(1);
     setSearchParams({}, { replace: true });
   };
 
   const filtered = useMemo(() => {
-    let r = products.filter((p) => p.image_link && p.name);
+    let r = products.filter((p) => p.name);
     if (query)
       r = r.filter(
         (p) =>
@@ -106,12 +103,6 @@ export default function Products() {
     return r;
   }, [products, query, brand, category, maxPrice, minRating, sort]);
 
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  useEffect(() => {
-    setPage(1);
-  }, [query, brand, category, maxPrice, minRating, sort]);
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 antialiased">
       {/* Top Section: Title & Search */}
@@ -131,7 +122,6 @@ export default function Products() {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
-              setPage(1);
             }}
             placeholder="Search products, brands, styles..."
             className="w-full pl-12 pr-4 py-3 rounded-2xl bg-muted/40 border border-transparent focus:bg-background focus:border-border focus:ring-4 focus:ring-primary/5 transition-all outline-none"
@@ -214,7 +204,7 @@ export default function Products() {
                   className="aspect-[4/5] rounded-3xl bg-muted animate-pulse"
                 />
               ))
-            : pageItems.map((p) => <ProductCard key={p.id} product={p} />)}
+            : filtered.map((p) => <ProductCard key={p.id} product={p} />)}{" "}
         </div>
 
         {!isLoading && filtered.length === 0 && (
@@ -237,54 +227,6 @@ export default function Products() {
           </div>
         )}
       </div>
-
-     
-      {/* Pagination */}
-      {Math.ceil(filtered.length / PAGE_SIZE) > 1 && (
-        <div className="mt-16 flex items-center justify-center gap-2">
-          <button
-            disabled={page === 1}
-            onClick={() => {
-              setPage((p) => p - 1);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="px-4 py-2 rounded-xl border border-border bg-background disabled:opacity-40 disabled:cursor-not-allowed hover:bg-muted transition"
-          >
-            Prev
-          </button>
-
-          {Array.from({
-            length: Math.ceil(filtered.length / PAGE_SIZE),
-          }).map((_, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                setPage(i + 1);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className={cn(
-                "size-11 rounded-xl text-sm font-semibold transition-all duration-200",
-                page === i + 1
-                  ? "bg-rose text-white shadow-lg shadow-rose/25 scale-105"
-                  : "bg-muted hover:bg-muted/70",
-              )}
-            >
-              {i + 1}
-            </button>
-          ))}
-
-          <button
-            disabled={page === Math.ceil(filtered.length / PAGE_SIZE)}
-            onClick={() => {
-              setPage((p) => p + 1);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="px-4 py-2 rounded-xl border border-border bg-background disabled:opacity-40 disabled:cursor-not-allowed hover:bg-muted transition"
-          >
-            Next
-          </button>
-        </div>
-      )}
     </div>
   );
 }

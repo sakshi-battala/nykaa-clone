@@ -4,6 +4,7 @@ import type { Product } from "../types/product";
 import { useApp } from "../context/AppContext";
 import { labelForType } from "../utils/categories";
 import { cn } from "../lib/utils";
+import { getProductImage } from "../utils/fallbackImages";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addToCart, toggleWishlist, inWishlist } = useApp();
@@ -13,17 +14,19 @@ export function ProductCard({ product }: { product: Product }) {
     <div className="group relative bg-card rounded-xl overflow-hidden border border-border/60 transition-all hover:shadow-2xl hover:-translate-y-1 duration-300 h-full flex flex-col">
       <Link to={`/product/${product.id}`} className="block">
         <div className="aspect-square overflow-hidden bg-muted relative">
-          <img
-            src={product.image_link}
-            alt={product.name}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src =
-                "https://placehold.co/600x600/png?text=No+Image";
-            }}
-          />
+          <div className="aspect-square overflow-hidden bg-muted relative">
+            <img
+              src={getProductImage(product)}
+              alt={product.name}
+              loading="lazy"
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src =
+                  "https://placehold.co/600x600?text=Beauty+Product";
+              }}
+            />
+          </div>
           {product.product_type && (
             <span className="absolute top-3 left-3 text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full bg-background/90 backdrop-blur font-medium">
               {labelForType(product.product_type)}

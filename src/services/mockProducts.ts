@@ -78,11 +78,6 @@ const colors = [
   { hex_value: "#5d2a3a", colour_name: "Plum" },
 ];
 
-function img(type: string, i: number) {
-  // Use Unsplash beauty product images
-  const seed = `${type}-${i}`;
-  return `https://picsum.photos/seed/${seed}/600/600`;
-}
 
 export const mockProducts: Product[] = Array.from({ length: 60 }, (_, i) => {
   const type = types[i % types.length];
@@ -96,7 +91,7 @@ export const mockProducts: Product[] = Array.from({ length: 60 }, (_, i) => {
     price: (Math.floor(Math.random() * 40) + 8).toFixed(2),
     price_sign: "$",
     currency: "USD",
-    image_link: img(type, i),
+    image_link: "",
     description: `Discover the ${name}. A luxurious ${type} crafted with premium ingredients for a flawless finish that lasts all day. Cruelty-free and dermatologist-tested.`,
     rating: Math.round((Math.random() * 2 + 3) * 10) / 10,
     category: type,
