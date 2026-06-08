@@ -1,73 +1,84 @@
-# React + TypeScript + Vite
+# Nykaa Clone
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + TypeScript + Vite clone of a Nykaa-style e-commerce storefront focused on beauty and cosmetics.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+This project is a frontend demo built with:
 
-## React Compiler
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router DOM
+- Radix UI primitives
+- React Query
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+It includes pages for home, products, product details, wishlist, cart, and checkout.
 
-## Expanding the ESLint configuration
+## Makeup API
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+The product data is fetched from the Makeup API:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- `https://makeup-api.herokuapp.com/api/v1/products.json`
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+The app uses `src/services/api.ts` to request product data. It filters out products without an image or name, normalizes missing prices to `9.99`, and gracefully falls back to local mock data when the Makeup API is unreachable.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### API behavior
+
+- Fetches a list of makeup products from the Makeup API
+- Filters out invalid items that are missing `image_link` or `name`
+- Sets a default price for products without a price
+- Uses `src/services/mockProducts.ts` as a fallback when the external API fails
+
+## Features
+
+- Product catalog with search, category and brand filters
+- Price range filtering, rating filtering, and sort options
+- Product detail pages with item previews and pricing
+- Cart drawer plus a dedicated cart page for item management
+- Wishlist support for saved products
+- Checkout form with validation-ready fields
+- Responsive layout for desktop and mobile
+- API fallback to local mock data when the Makeup API is unavailable
+
+## Project structure
+
+- `src/pages/` — top-level route screens like Home, Products, Cart, Wishlist, and Checkout
+- `src/components/` — reusable UI pieces such as cards, navbar, footer, and cart drawer
+- `src/services/` — data loading, external Makeup API integration, and mock fallback data
+- `src/context/` — shared application state and cart/wishlist logic
+- `src/types/` — TypeScript interfaces for products and app data
+- `src/utils/` — helper utilities, category lists, and formatting helpers
+
+## Getting started
+
+Install dependencies:
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Run the development server:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+Build for production:
+
+```bash
+npm run build
+```
+
+Preview the production build:
+
+```bash
+npm run preview
+```
+
+## Notes
+
+- The Makeup API is a public, open API for cosmetics product data.
+- Local mock data is provided to ensure the app still works if the external API is unavailable.
+- The app is intended as a UI clone and does not include payment processing.
