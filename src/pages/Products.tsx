@@ -1,49 +1,80 @@
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, RotateCcw, ChevronDown, Star } from "lucide-react";
 import { fetchProducts } from "../services/api";
 import { ProductCard } from "../components/ProductCard";
+import { cn } from "../lib/utils";
 
 const PAGE_SIZE = 12;
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQ = searchParams.get("q") ?? "";
-  const initialBrand = searchParams.get("brand") ?? "all";
-  const initialCategory = searchParams.get("category") ?? "all";
 
   const {
     data: products = [],
     isLoading,
     isError,
-  } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
+  } = useQuery({
+    queryKey: ["products"],
+    queryFn: fetchProducts,
+  });
 
   const [query, setQuery] = useState(initialQ);
-  const [brand, setBrand] = useState(initialBrand);
-  const [category, setCategory] = useState(initialCategory);
+  const [brand, setBrand] = useState(searchParams.get("brand") ?? "all");
+
+  const [category, setCategory] = useState(
+    searchParams.get("category") ?? "all",
+  );
   const [maxPrice, setMaxPrice] = useState(100);
   const [minRating, setMinRating] = useState(0);
   const [sort, setSort] = useState("featured");
   const [page, setPage] = useState(1);
 
-  const brands = useMemo(
+  const brands = useMemo<string[]>(
     () =>
       Array.from(
-        new Set(products.map((p) => p.brand).filter(Boolean)),
-      ).sort() as string[],
-    [products],
-  );
-  const categories = useMemo(
-    () =>
-      Array.from(
-        new Set(products.map((p) => p.category).filter(Boolean)),
-      ).sort() as string[],
+        new Set(
+          products
+            .map((p) => p.brand)
+            .filter((b): b is string => typeof b === "string" && b.length > 0),
+        ),
+      ).sort(),
     [products],
   );
 
+  const categories = useMemo<string[]>(
+    () =>
+      Array.from(
+        new Set(
+          products
+            .map((p) => p.category)
+            .filter((c): c is string => typeof c === "string" && c.length > 0),
+        ),
+      ).sort(),
+    [products],
+  );
+
+  const isFiltered =
+    query !== "" ||
+    brand !== "all" ||
+    category !== "all" ||
+    maxPrice < 100 ||
+    minRating > 0;
+
+  const resetFilters = () => {
+    setQuery("");
+    setBrand("all");
+    setCategory("all");
+    setMaxPrice(100);
+    setMinRating(0);
+    setPage(1);
+    setSearchParams({}, { replace: true });
+  };
+
   const filtered = useMemo(() => {
-    let r = products;
+    let r = products.filter((p) => p.image_link && p.name);
     if (query)
       r = r.filter(
         (p) =>
@@ -57,6 +88,7 @@ export default function Products() {
       );
     r = r.filter((p) => Number(p.price) <= maxPrice);
     if (minRating > 0) r = r.filter((p) => (p.rating ?? 0) >= minRating);
+
     switch (sort) {
       case "price-asc":
         r = [...r].sort((a, b) => Number(a.price) - Number(b.price));
@@ -74,179 +106,219 @@ export default function Products() {
     return r;
   }, [products, query, brand, category, maxPrice, minRating, sort]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const onSearch = (val: string) => {
-    setQuery(val);
+  useEffect(() => {
     setPage(1);
-    const next = new URLSearchParams(searchParams);
-    if (val) next.set("q", val);
-    else next.delete("q");
-    setSearchParams(next, { replace: true });
-  };
+  }, [query, brand, category, maxPrice, minRating, sort]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
-      <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 antialiased">
+      {/* Top Section: Title & Search */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
-          <h1 className="font-display text-4xl">Shop All</h1>
-          <p className="text-muted-foreground mt-1">
-            {filtered.length} products
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+            Catalog
+          </h1>
+          <p className="text-muted-foreground mt-2 text-sm italic">
+            {filtered.length} curated items
           </p>
         </div>
-        <div className="flex gap-3 items-center">
-          <div className="relative">
-            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search"
-              className="pl-9 pr-3 py-2 rounded-full bg-muted text-sm w-56 focus:outline-none"
-            />
-          </div>
+
+        <div className="relative group max-w-md w-full">
+          <Search className="size-5 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+          <input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search products, brands, styles..."
+            className="w-full pl-12 pr-4 py-3 rounded-2xl bg-muted/40 border border-transparent focus:bg-background focus:border-border focus:ring-4 focus:ring-primary/5 transition-all outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Filter Toolbar */}
+      <div className="flex flex-wrap items-center gap-3 mb-8 pb-6 border-b border-border/50">
+        <FilterSelect
+          label="Category"
+          value={category}
+          onChange={setCategory}
+          options={["all", ...categories]}
+        />
+        <FilterSelect
+          label="Brand"
+          value={brand}
+          onChange={setBrand}
+          options={["all", ...brands]}
+        />
+        <FilterSelect
+          label="Min Rating"
+          value={minRating.toString()}
+          onChange={(v) => setMinRating(Number(v))}
+          options={["0", "3", "4", "4.5"]}
+          isRating
+        />
+
+        <div className="flex items-center gap-4 px-4 py-2 bg-muted/30 rounded-xl border border-border/40">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+            Max: ${maxPrice}
+          </span>
+          <input
+            type="range"
+            min={5}
+            max={100}
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(Number(e.target.value))}
+            className="w-24 sm:w-32 accent-primary h-1.5 rounded-full cursor-pointer"
+          />
+        </div>
+
+        <div className="flex-1" />
+
+        <div className="flex items-center gap-2">
+          {isFiltered && (
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-rose-500 hover:bg-rose-50 rounded-xl transition-colors"
+            >
+              <RotateCcw className="size-4" /> Clear
+            </button>
+          )}
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="px-3 py-2 rounded-full bg-muted text-sm focus:outline-none"
+            className="bg-background border border-border px-4 py-2 rounded-xl text-sm font-medium outline-none hover:bg-muted/30 transition-colors cursor-pointer"
           >
             <option value="featured">Featured</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="name-asc">Name: A-Z</option>
-            <option value="name-desc">Name: Z-A</option>
+            <option value="price-asc">Price: Low-High</option>
+            <option value="price-desc">Price: High-Low</option>
           </select>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[260px_1fr] gap-8">
-        <aside className="space-y-6">
-          <div className="flex items-center gap-2 font-medium">
-            <SlidersHorizontal className="size-4" /> Filters
-          </div>
+      {/* Optimized Grid */}
+      <div className="min-h-[60vh]">
+        {isError && (
+          <p className="text-center text-rose-500 py-20">
+            Something went wrong. Please refresh.
+          </p>
+        )}
 
-          <FilterGroup title="Category">
-            <Select
-              value={category}
-              onChange={setCategory}
-              options={[
-                ["all", "All"],
-                ...categories.map((c) => [c, c] as [string, string]),
-              ]}
-            />
-          </FilterGroup>
-
-          <FilterGroup title="Brand">
-            <Select
-              value={brand}
-              onChange={setBrand}
-              options={[
-                ["all", "All"],
-                ...brands.map((b) => [b, b] as [string, string]),
-              ]}
-            />
-          </FilterGroup>
-
-          <FilterGroup title={`Max Price: $${maxPrice}`}>
-            <input
-              type="range"
-              min={5}
-              max={100}
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="w-full accent-rose"
-            />
-          </FilterGroup>
-
-          <FilterGroup title="Rating">
-            <div className="flex gap-2">
-              {[0, 3, 4, 4.5].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setMinRating(r)}
-                  className={`flex-1 py-1.5 rounded-md text-xs border ${minRating === r ? "bg-primary text-primary-foreground border-primary" : "border-border"}`}
-                >
-                  {r === 0 ? "Any" : `${r}+`}
-                </button>
-              ))}
-            </div>
-          </FilterGroup>
-        </aside>
-
-        <div>
-          {isError && (
-            <p className="text-destructive">Failed to load products.</p>
-          )}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-            {isLoading &&
-              Array.from({ length: PAGE_SIZE }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
+          {isLoading
+            ? Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-[3/4] rounded-xl bg-muted animate-pulse"
+                  className="aspect-[4/5] rounded-3xl bg-muted animate-pulse"
                 />
-              ))}
-            {!isLoading &&
-              pageItems.map((p) => <ProductCard key={p.id} product={p} />)}
-          </div>
-          {!isLoading && filtered.length === 0 && (
-            <div className="text-center py-20 text-muted-foreground">
-              No products match your filters.
-            </div>
-          )}
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-10">
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setPage(i + 1)}
-                  className={`size-9 rounded-full text-sm ${page === i + 1 ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
-          )}
+              ))
+            : pageItems.map((p) => <ProductCard key={p.id} product={p} />)}
         </div>
+
+        {!isLoading && filtered.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-32 text-center">
+            <div className="bg-muted p-6 rounded-full mb-4">
+              <Search className="size-10 text-muted-foreground/60" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground">
+              No matches found
+            </h3>
+            <p className="text-muted-foreground mt-1">
+              Try broadening your filters or searching for something else.
+            </p>
+            <button
+              onClick={resetFilters}
+              className="mt-6 px-6 py-2 bg-primary text-primary-foreground rounded-full font-medium"
+            >
+              Reset Filters
+            </button>
+          </div>
+        )}
       </div>
+
+     
+      {/* Pagination */}
+      {Math.ceil(filtered.length / PAGE_SIZE) > 1 && (
+        <div className="mt-16 flex items-center justify-center gap-2">
+          <button
+            disabled={page === 1}
+            onClick={() => {
+              setPage((p) => p - 1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="px-4 py-2 rounded-xl border border-border bg-background disabled:opacity-40 disabled:cursor-not-allowed hover:bg-muted transition"
+          >
+            Prev
+          </button>
+
+          {Array.from({
+            length: Math.ceil(filtered.length / PAGE_SIZE),
+          }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                setPage(i + 1);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={cn(
+                "size-11 rounded-xl text-sm font-semibold transition-all duration-200",
+                page === i + 1
+                  ? "bg-rose text-white shadow-lg shadow-rose/25 scale-105"
+                  : "bg-muted hover:bg-muted/70",
+              )}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            disabled={page === Math.ceil(filtered.length / PAGE_SIZE)}
+            onClick={() => {
+              setPage((p) => p + 1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="px-4 py-2 rounded-xl border border-border bg-background disabled:opacity-40 disabled:cursor-not-allowed hover:bg-muted transition"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function FilterGroup({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <h3 className="text-sm font-semibold mb-2">{title}</h3>
-      {children}
-    </div>
-  );
-}
-
-function Select({
+function FilterSelect({
+  label,
   value,
   onChange,
   options,
+  isRating = false,
 }: {
+  label: string;
   value: string;
   onChange: (v: string) => void;
-  options: [string, string][];
+  options: string[];
+  isRating?: boolean;
 }) {
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-2 rounded-md bg-muted text-sm border-0 focus:outline-none capitalize"
-    >
-      {options.map(([v, l]) => (
-        <option key={v} value={v} className="capitalize">
-          {l}
+    <div className="relative group">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="appearance-none bg-background border border-border pl-4 pr-10 py-2 rounded-xl text-sm font-medium outline-none hover:border-muted-foreground/40 transition-all cursor-pointer capitalize"
+      >
+        <option value={options[0]}>
+          {label}: {isRating && value !== "0" ? `${value}★` : "All"}
         </option>
-      ))}
-    </select>
+        {options.slice(1).map((opt) => (
+          <option key={opt} value={opt}>
+            {isRating ? `${opt} Stars & Up` : opt}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none group-hover:text-foreground transition-colors" />
+    </div>
   );
 }

@@ -3,7 +3,7 @@ import { Heart, ShoppingBag, Star, Eye } from "lucide-react";
 import type { Product } from "../types/product";
 import { useApp } from "../context/AppContext";
 import { labelForType } from "../utils/categories";
-import { cn } from "../lib/utils"; 
+import { cn } from "../lib/utils";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addToCart, toggleWishlist, inWishlist } = useApp();
@@ -18,7 +18,11 @@ export function ProductCard({ product }: { product: Product }) {
             alt={product.name}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).src = `https://picsum.photos/seed/${product.id}/600/600`; }}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src =
+                "https://placehold.co/600x600/png?text=No+Image";
+            }}
           />
           {product.product_type && (
             <span className="absolute top-3 left-3 text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full bg-background/90 backdrop-blur font-medium">
@@ -29,7 +33,10 @@ export function ProductCard({ product }: { product: Product }) {
       </Link>
       <div className="absolute top-3 right-3 flex flex-col gap-2">
         <button
-          onClick={(e) => { e.preventDefault(); toggleWishlist(product); }}
+          onClick={(e) => {
+            e.preventDefault();
+            toggleWishlist(product);
+          }}
           className="size-9 rounded-full bg-background/90 backdrop-blur grid place-items-center hover:bg-background transition shadow"
           aria-label="wishlist"
         >
@@ -44,16 +51,22 @@ export function ProductCard({ product }: { product: Product }) {
         </Link>
       </div>
       <div className="p-4 flex-1 flex flex-col">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{product.brand}</p>
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          {product.brand}
+        </p>
         <Link to={`/product/${product.id}`}>
-          <h3 className="font-medium text-sm mt-1 line-clamp-2 min-h-[2.5rem] hover:text-rose transition">{product.name}</h3>
+          <h3 className="font-medium text-sm mt-1 line-clamp-2 min-h-[2.5rem] hover:text-rose transition">
+            {product.name}
+          </h3>
         </Link>
         <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
           <Star className="size-3 fill-rose text-rose" />
           <span>{product.rating?.toFixed(1) ?? "4.5"}</span>
         </div>
         <div className="flex items-center justify-between mt-auto pt-3">
-          <span className="font-semibold">${Number(product.price).toFixed(2)}</span>
+          <span className="font-semibold">
+            ${Number(product.price).toFixed(2)}
+          </span>
           <button
             onClick={() => addToCart(product)}
             className="size-9 rounded-full bg-primary text-primary-foreground grid place-items-center hover:bg-rose hover:text-white transition"
