@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Search, RotateCcw, ChevronDown, Star } from "lucide-react";
+import { Search, RotateCcw, ChevronDown } from "lucide-react";
 import { fetchProducts } from "../services/api";
 import { ProductCard } from "../components/ProductCard";
 import { cn } from "../lib/utils";
