@@ -50,7 +50,20 @@ export default function App() {
       </main>
       <Footer />
       <CartDrawer />
-      <Toaster position="bottom-right" richColors />
+      <Toaster
+        position="top-center"
+        richColors
+        closeButton
+        expand={true}
+        visibleToasts={3}
+        toastOptions={{
+          classNames: {
+            toast: "font-sans rounded-xl shadow-lg border",
+            title: "font-semibold",
+            description: "text-sm",
+          },
+        }}
+      />
     </AppProvider>
   );
 }
