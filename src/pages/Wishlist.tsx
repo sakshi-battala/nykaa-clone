@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Heart, ShoppingBag, Trash2 } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { getFallbackImage, getProductImage } from "../utils/fallbackImages";
 
 export default function Wishlist() {
   const { wishlist, removeFromWishlist, addToCart } = useApp();
@@ -33,9 +34,13 @@ export default function Wishlist() {
             >
               <Link to={`/product/${p.id}`}>
                 <img
-                  src={p.image_link}
+                  src={getProductImage(p)}
                   alt={p.name}
                   className="aspect-square w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = getFallbackImage(p);
+                  }}
                 />
               </Link>
               <div className="p-4">

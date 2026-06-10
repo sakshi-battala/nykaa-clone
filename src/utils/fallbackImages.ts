@@ -19,6 +19,8 @@ const fallbackImages: Record<string, string> = {
     "https://static.beautytocare.com/cdn-cgi/image/width=1600,height=1600,f=auto/media/catalog/product//n/y/nyx-pro-makeup-suede-matte-lip-liner-soft-spoken-1g_1.jpg",
   eyebrow:
     "https://alixavien.in/cdn/shop/products/Brow-Liner-154-Deepest-Brown-iz.jpg?v=1681711712&width=1445",
+  nail_polish:
+    "https://keautybeauty.in/cdn/shop/files/2_1.jpg?v=1741252363&width=4000",
 };
 
 export function getProductImage(product: Product): string {
