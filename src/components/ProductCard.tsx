@@ -4,7 +4,7 @@ import type { Product } from "../types/product";
 import { useApp } from "../context/AppContext";
 import { labelForType } from "../utils/categories";
 import { cn } from "../lib/utils";
-import { getProductImage } from "../utils/fallbackImages";
+import { getFallbackImage, getProductImage } from "../utils/fallbackImages";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addToCart, toggleWishlist, inWishlist } = useApp();
@@ -22,8 +22,7 @@ export function ProductCard({ product }: { product: Product }) {
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               onError={(e) => {
                 e.currentTarget.onerror = null;
-                e.currentTarget.src =
-                  "https://placehold.co/600x600?text=Beauty+Product";
+                e.currentTarget.src = getFallbackImage(product);
               }}
             />
           </div>

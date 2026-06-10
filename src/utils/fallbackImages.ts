@@ -15,13 +15,21 @@ const fallbackImages: Record<string, string> = {
     "https://images.unsplash.com/photo-1500839941678-aae14dbfae9a?q=80&w=2151&auto=format&fit=crop",
   eyeshadow:
     "https://images.unsplash.com/photo-1533562389935-457b1ae48a39?q=80&w=2070&auto=format&fit=crop",
+  lip_liner:
+    "https://static.beautytocare.com/cdn-cgi/image/width=1600,height=1600,f=auto/media/catalog/product//n/y/nyx-pro-makeup-suede-matte-lip-liner-soft-spoken-1g_1.jpg",
+  eyebrow:
+    "https://alixavien.in/cdn/shop/products/Brow-Liner-154-Deepest-Brown-iz.jpg?v=1681711712&width=1445",
 };
 
 export function getProductImage(product: Product): string {
-  if (product.image_link?.trim()) {
-    return product.image_link;
-  }
+  return (
+    product.image_link ||
+    fallbackImages[product.product_type ?? ""] ||
+    "https://placehold.co/600x600?text=No+Image"
+  );
+}
 
+export function getFallbackImage(product: Product): string {
   return (
     fallbackImages[product.product_type ?? ""] ||
     "https://placehold.co/600x600?text=No+Image"

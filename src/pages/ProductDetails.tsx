@@ -16,7 +16,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { labelForType } from "../utils/categories";
 import { useApp } from "../context/AppContext";
 import { cn } from "../lib/utils";
-import { getProductImage } from "../utils/fallbackImages";
+import { getFallbackImage, getProductImage } from "../utils/fallbackImages";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -89,8 +89,7 @@ export default function ProductDetails() {
             className="w-full aspect-square object-cover"
             onError={(e) => {
               e.currentTarget.onerror = null;
-              e.currentTarget.src =
-                "https://placehold.co/800x800?text=Beauty+Product";
+              e.currentTarget.src = getFallbackImage(product);
             }}
           />
 
