@@ -1,13 +1,13 @@
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { fetchProducts } from "../services/api";
 import { ProductCard } from "../components/ProductCard";
 import { FilterSidebar } from "../components/FiltersSidebar";
-import { Pagination } from "../components/Pagination"; // <-- New Import
+import { Pagination } from "../components/Pagination";
 
-const ITEMS_PER_PAGE = 12; // Adjust layout count here (multiples of 2, 3, or 4 work best)
+const ITEMS_PER_PAGE = 12;
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -40,7 +40,6 @@ export default function Products() {
 
   // Pagination Active State Tracker
   const currentPage = Number(searchParams.get("page") ?? "1");
-
   const debouncedQuery = useDebounce(query, 300);
 
   const {
@@ -51,41 +50,6 @@ export default function Products() {
     queryKey: ["products"],
     queryFn: fetchProducts,
   });
-
-  // Sync state changes with URL Search Params
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    selectedBrands.forEach((b) => params.append("brand", b));
-    selectedCategories.forEach((c) => params.append("category", c));
-    if (maxPrice < 100) params.set("maxPrice", maxPrice.toString());
-    if (minRating > 0) params.set("minRating", minRating.toString());
-    if (sort !== "featured") params.set("sort", sort);
-    if (currentPage > 1) params.set("page", currentPage.toString()); // Keep track of current grid page
-
-    setSearchParams(params, { replace: true });
-  }, [
-    debouncedQuery,
-    selectedBrands,
-    selectedCategories,
-    maxPrice,
-    minRating,
-    sort,
-    currentPage,
-    setSearchParams,
-  ]);
-
-  // Reset pagination indexes whenever filters clean up or alter structural length
-  const handleFilterChange = (updaterFn: () => void) => {
-    updaterFn();
-    setSearchParams(
-      (prev) => {
-        prev.delete("page");
-        return prev;
-      },
-      { replace: true },
-    );
-  };
 
   const brands = useMemo(
     () =>
@@ -100,50 +64,7 @@ export default function Products() {
     [products],
   );
 
-  const toggleBrand = (brand: string) => {
-    handleFilterChange(() => {
-      setSelectedBrands((prev) =>
-        prev.includes(brand)
-          ? prev.filter((b) => b !== brand)
-          : [...prev, brand],
-      );
-    });
-  };
-
-  const toggleCategory = (category: string) => {
-    handleFilterChange(() => {
-      setSelectedCategories((prev) =>
-        prev.includes(category)
-          ? prev.filter((c) => c !== category)
-          : [...prev, category],
-      );
-    });
-  };
-
-  const isFiltered =
-    query !== "" ||
-    selectedBrands.length > 0 ||
-    selectedCategories.length > 0 ||
-    maxPrice < 100 ||
-    minRating > 0;
-
-  const resetFilters = () => {
-    setQuery("");
-    setSelectedBrands([]);
-    setSelectedCategories([]);
-    setMaxPrice(100);
-    setMinRating(0);
-    setSort("featured");
-    setSearchParams(
-      (prev) => {
-        prev.delete("page");
-        return prev;
-      },
-      { replace: true },
-    );
-  };
-
-  // Step 1: Compute fully matched data items
+  // Step 1: Compute fully matched data items first so we know total available length
   const filteredProducts = useMemo(() => {
     let r = products.filter((p) => p.name);
 
@@ -193,19 +114,93 @@ export default function Products() {
     sort,
   ]);
 
-  // Step 2: Slice the completely filtered data array specifically for the current active page chunk
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+
+  // Keep track of active filters to catch when a filter was altered
+  const filterSignature = `${debouncedQuery}-${selectedBrands.join(",")}-${selectedCategories.join(",")}-${maxPrice}-${minRating}-${sort}`;
+  const lastFilters = useRef(filterSignature);
+
+  // Sync state changes with URL Search Params cleanly
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    selectedBrands.forEach((b) => params.append("brand", b));
+    selectedCategories.forEach((c) => params.append("category", c));
+    if (maxPrice < 100) params.set("maxPrice", maxPrice.toString());
+    if (minRating > 0) params.set("minRating", minRating.toString());
+    if (sort !== "featured") params.set("sort", sort);
+
+    // FIX: Detect if filters changed. If they did, force drop back to page 1.
+    let targetPage = currentPage;
+    if (lastFilters.current !== filterSignature) {
+      targetPage = 1;
+      lastFilters.current = filterSignature;
+    } else if (totalPages > 0 && currentPage > totalPages) {
+      // Safety Fallback: Clamp the page to max available pages if it overflows
+      targetPage = totalPages;
+    }
+
+    if (targetPage > 1) params.set("page", targetPage.toString());
+
+    setSearchParams(params, { replace: true });
+  }, [
+    debouncedQuery,
+    selectedBrands,
+    selectedCategories,
+    maxPrice,
+    minRating,
+    sort,
+    currentPage,
+    totalPages,
+    filterSignature,
+    setSearchParams,
+  ]);
+
+  const toggleBrand = (brand: string) => {
+    setSelectedBrands((prev) =>
+      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand],
+    );
+  };
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category],
+    );
+  };
+
+  const isFiltered =
+    query !== "" ||
+    selectedBrands.length > 0 ||
+    selectedCategories.length > 0 ||
+    maxPrice < 100 ||
+    minRating > 0;
+
+  const resetFilters = () => {
+    setQuery("");
+    setSelectedBrands([]);
+    setSelectedCategories([]);
+    setMaxPrice(100);
+    setMinRating(0);
+    setSort("featured");
+    setSearchParams(new URLSearchParams(), { replace: true });
+  };
+
+  // Step 2: Slice the completely filtered data array specifically for the current active page chunk
   const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    // If currentPage exceeds calculations, safe fallback to index 0 logic
+    const safePage = currentPage > totalPages ? 1 : currentPage;
+    const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
     return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
+  }, [filteredProducts, currentPage, totalPages]);
 
   const handlePageChange = (pageNumber: number) => {
     setSearchParams((prev) => {
-      prev.set("page", pageNumber.toString());
-      return prev;
+      const nextParams = new URLSearchParams(prev);
+      nextParams.set("page", pageNumber.toString());
+      return nextParams;
     });
-    // Optional smooth-scroll back to catalog top container on page change
     const container = document.getElementById("products-scroll-area");
     if (container) container.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -224,13 +219,11 @@ export default function Products() {
               selectedBrands={selectedBrands}
               toggleBrand={toggleBrand}
               minRating={minRating}
-              setMinRating={(val) =>
-                handleFilterChange(() => setMinRating(val))
-              }
+              setMinRating={setMinRating}
               maxPrice={maxPrice}
-              setMaxPrice={(val) => handleFilterChange(() => setMaxPrice(val))}
+              setMaxPrice={setMaxPrice}
               sort={sort}
-              setSort={(val) => handleFilterChange(() => setSort(val))}
+              setSort={setSort}
               isFiltered={isFiltered}
               resetFilters={resetFilters}
             />
@@ -238,7 +231,6 @@ export default function Products() {
 
           {/* Products Content Container */}
           <section className="overflow-hidden flex flex-col h-full">
-            {/* Header section with search bar */}
             <div className="sticky top-0 z-20 bg-background pb-4 border-b border-border/50 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
@@ -257,9 +249,7 @@ export default function Products() {
                     <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       value={query}
-                      onChange={(e) =>
-                        handleFilterChange(() => setQuery(e.target.value))
-                      }
+                      onChange={(e) => setQuery(e.target.value)}
                       placeholder="Search products..."
                       className="w-full pl-9 pr-3 py-2 rounded-xl bg-muted/40 border border-input focus:bg-background focus:ring-2 focus:ring-primary/10 outline-none transition-all text-xs"
                     />
@@ -292,7 +282,6 @@ export default function Products() {
                   </div>
                 )}
 
-                {/* Grid Mapping out the Paginated Slice */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
                   {isLoading
                     ? Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
@@ -322,9 +311,8 @@ export default function Products() {
                 )}
               </div>
 
-              {/* Connected Separated Pagination Controls Footer Module */}
               <Pagination
-                currentPage={currentPage}
+                currentPage={currentPage > totalPages ? 1 : currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
               />
@@ -359,15 +347,11 @@ export default function Products() {
                 selectedBrands={selectedBrands}
                 toggleBrand={toggleBrand}
                 minRating={minRating}
-                setMinRating={(val) =>
-                  handleFilterChange(() => setMinRating(val))
-                }
+                setMinRating={setMinRating}
                 maxPrice={maxPrice}
-                setMaxPrice={(val) =>
-                  handleFilterChange(() => setMaxPrice(val))
-                }
+                setMaxPrice={setMaxPrice}
                 sort={sort}
-                setSort={(val) => handleFilterChange(() => setSort(val))}
+                setSort={setSort}
                 isFiltered={isFiltered}
                 resetFilters={resetFilters}
               />
