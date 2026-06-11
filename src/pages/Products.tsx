@@ -242,7 +242,7 @@ export default function Products() {
 
           {/* Products Content Container */}
           <section className="overflow-hidden flex flex-col h-full">
-            <div className="sticky top-0 z-20 bg-background pb-4 border-b border-border/50 mb-4">
+            <div className="bg-background pb-4 border-b border-border/50 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -255,19 +255,11 @@ export default function Products() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:max-w-xs">
-                  <div className="relative flex-1">
-                    <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search products..."
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-muted/40 border border-input focus:bg-background focus:ring-2 focus:ring-primary/10 outline-none transition-all text-xs"
-                    />
-                  </div>
+                <div className="flex items-center justify-end">
                   <button
                     onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
-                    className="lg:hidden p-2 border border-input rounded-xl bg-muted/50 hover:bg-muted"
+                    className="lg:hidden p-2 border border-input rounded-xl bg-muted/50 hover:bg-muted transition"
+                    aria-label="Open filters"
                   >
                     <SlidersHorizontal className="size-4" />
                   </button>
@@ -275,53 +267,54 @@ export default function Products() {
               </div>
             </div>
 
-            {/* Scrollable Products List Container */}
+            {/* Scrollable Products List Container (Pagination removed from inside here) */}
             <div
               id="products-scroll-area"
-              className="overflow-y-auto flex-1 pr-1.5 -mr-1.5 flex flex-col justify-between
+              className="overflow-y-auto flex-1 pr-1.5 -mr-1.5
               [&::-webkit-scrollbar]:w-1.5
               [&::-webkit-scrollbar-track]:bg-transparent
               [&::-webkit-scrollbar-thumb]:bg-muted-foreground/10
               [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/30"
             >
-              <div>
-                {isError && (
-                  <div className="text-center py-16 bg-destructive/5 rounded-2xl border border-destructive/20 max-w-md mx-auto my-6">
-                    <p className="text-destructive font-medium text-xs">
-                      Something went wrong fetching the items.
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
-                  {isLoading
-                    ? Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="aspect-[3/4] rounded-xl bg-muted animate-pulse border border-border/30"
-                        />
-                      ))
-                    : paginatedProducts.map((product) => (
-                        <ProductCard key={product.id} product={product} />
-                      ))}
+              {isError && (
+                <div className="text-center py-16 bg-destructive/5 rounded-2xl border border-destructive/20 max-w-md mx-auto my-6">
+                  <p className="text-destructive font-medium text-xs">
+                    Something went wrong fetching the items.
+                  </p>
                 </div>
+              )}
 
-                {!isLoading && filteredProducts.length === 0 && (
-                  <div className="text-center py-16 bg-muted/20 rounded-xl border border-dashed border-border max-w-sm mx-auto">
-                    <h3 className="text-sm font-semibold">No products found</h3>
-                    <p className="text-muted-foreground text-xs mt-1">
-                      Try adjusting your active configuration filters.
-                    </p>
-                    <button
-                      onClick={resetFilters}
-                      className="mt-4 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 shadow transition-colors"
-                    >
-                      Clear All Filters
-                    </button>
-                  </div>
-                )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-6">
+                {isLoading
+                  ? Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="aspect-[3/4] rounded-xl bg-muted animate-pulse border border-border/30"
+                      />
+                    ))
+                  : paginatedProducts.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
               </div>
 
+              {!isLoading && filteredProducts.length === 0 && (
+                <div className="text-center py-16 bg-muted/20 rounded-xl border border-dashed border-border max-w-sm mx-auto">
+                  <h3 className="text-sm font-semibold">No products found</h3>
+                  <p className="text-muted-foreground text-xs mt-1">
+                    Try adjusting your active configuration filters.
+                  </p>
+                  <button
+                    onClick={resetFilters}
+                    className="mt-4 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 shadow transition-colors"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* FIXED: Pagination sits cleanly outside the scroll region as a layout block footer */}
+            <div className="bg-background pt-2 mt-auto">
               <Pagination
                 currentPage={currentPage > totalPages ? 1 : currentPage}
                 totalPages={totalPages}
