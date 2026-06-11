@@ -23,12 +23,18 @@ export default function Products() {
 
   // State Sync
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
-  const [selectedBrands, setSelectedBrands] = useState<string[]>(
-    searchParams.getAll("brand"),
-  );
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    searchParams.getAll("category"),
-  );
+
+  // Parse comma-separated strings from URL into clean arrays for state
+  const [selectedBrands, setSelectedBrands] = useState<string[]>(() => {
+    const brandsParam = searchParams.get("brands");
+    return brandsParam ? brandsParam.split(",") : [];
+  });
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    const catsParam = searchParams.get("categories");
+    return catsParam ? catsParam.split(",") : [];
+  });
+
   const [maxPrice, setMaxPrice] = useState(
     Number(searchParams.get("maxPrice") ?? "100"),
   );
@@ -124,19 +130,25 @@ export default function Products() {
   useEffect(() => {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
-    selectedBrands.forEach((b) => params.append("brand", b));
-    selectedCategories.forEach((c) => params.append("category", c));
+
+    // Serialize array vectors into clean comma-delimited strings
+    if (selectedBrands.length > 0) {
+      params.set("brands", selectedBrands.join(","));
+    }
+    if (selectedCategories.length > 0) {
+      params.set("categories", selectedCategories.join(","));
+    }
+
     if (maxPrice < 100) params.set("maxPrice", maxPrice.toString());
     if (minRating > 0) params.set("minRating", minRating.toString());
     if (sort !== "featured") params.set("sort", sort);
 
-    // FIX: Detect if filters changed. If they did, force drop back to page 1.
+    // Pagination auto-reset and safety boundary checks
     let targetPage = currentPage;
     if (lastFilters.current !== filterSignature) {
       targetPage = 1;
       lastFilters.current = filterSignature;
     } else if (totalPages > 0 && currentPage > totalPages) {
-      // Safety Fallback: Clamp the page to max available pages if it overflows
       targetPage = totalPages;
     }
 
@@ -189,7 +201,6 @@ export default function Products() {
 
   // Step 2: Slice the completely filtered data array specifically for the current active page chunk
   const paginatedProducts = useMemo(() => {
-    // If currentPage exceeds calculations, safe fallback to index 0 logic
     const safePage = currentPage > totalPages ? 1 : currentPage;
     const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
     return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
