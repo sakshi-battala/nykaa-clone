@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import {  SlidersHorizontal } from "lucide-react";
 import { fetchProducts } from "../services/api";
 import { ProductCard } from "../components/ProductCard";
 import { FilterSidebar } from "../components/FiltersSidebar";
