@@ -17,4 +17,8 @@ export interface Product {
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedShade?: {
+    colour_name: string;
+    hex_value: string;
+  } | null;
 }

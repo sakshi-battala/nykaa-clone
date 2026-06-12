@@ -24,6 +24,7 @@ export default function ProductDetails() {
     queryKey: ["products"],
     queryFn: fetchProducts,
   });
+
   const product = products.find((p) => p.id === Number(id));
   const { addToCart, toggleWishlist, inWishlist } = useApp();
   const navigate = useNavigate();
@@ -46,7 +47,8 @@ export default function ProductDetails() {
       </div>
     );
   }
-  if (!product)
+
+  if (!product) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
         <p>Product not found.</p>
@@ -55,6 +57,7 @@ export default function ProductDetails() {
         </Link>
       </div>
     );
+  }
 
   const related = products
     .filter(
@@ -63,10 +66,17 @@ export default function ProductDetails() {
         (p.brand === product.brand || p.product_type === product.product_type),
     )
     .slice(0, 8);
+
   const liked = inWishlist(product.id);
   const description =
     product.description || "A premium beauty product crafted with care.";
   const longDesc = description.length > 280;
+
+  // Helper helper to format our payload package with the runtime selected color object
+  const getPayloadWithVariant = () => ({
+    ...product,
+    selectedShade: product.product_colors?.[selectedColor] || null,
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
@@ -97,6 +107,7 @@ export default function ProductDetails() {
             No Image Available
           </div>
         </div>
+
         <div>
           <div className="flex items-center gap-2">
             {product.brand && (
@@ -110,9 +121,11 @@ export default function ProductDetails() {
               </span>
             )}
           </div>
+
           <h1 className="font-display text-3xl lg:text-4xl mt-3">
             {product.name}
           </h1>
+
           <div className="flex items-center gap-2 mt-3">
             <div className="flex">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -131,6 +144,7 @@ export default function ProductDetails() {
               {product.rating?.toFixed(1) ?? "4.5"} · 248 reviews
             </span>
           </div>
+
           <p className="text-3xl font-semibold mt-5">
             ${Number(product.price).toFixed(2)}
           </p>
@@ -160,6 +174,7 @@ export default function ProductDetails() {
             )}
           </div>
 
+          {/* Color variant section switches the local reference variable selection pointer */}
           {product.product_colors && product.product_colors.length > 0 && (
             <div className="mt-6">
               <p className="text-sm font-medium mb-2">
@@ -201,22 +216,25 @@ export default function ProductDetails() {
             </div>
           )}
 
+          {/* Checkout triggers updated to forward current variant shade selections */}
           <div className="flex flex-wrap gap-3 mt-8">
             <button
-              onClick={() => addToCart(product)}
+              onClick={() => addToCart(getPayloadWithVariant())}
               className="flex-1 min-w-[180px] inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-primary text-primary-foreground hover:bg-rose hover:text-white transition"
             >
               <ShoppingBag className="size-4" /> Add to Cart
             </button>
+
             <button
               onClick={() => {
-                addToCart(product);
+                addToCart(getPayloadWithVariant());
                 navigate("/checkout");
               }}
               className="flex-1 min-w-[180px] px-6 py-3.5 rounded-full border border-primary hover:bg-primary hover:text-primary-foreground transition"
             >
               Buy Now
             </button>
+
             <button
               onClick={() => toggleWishlist(product)}
               className="size-12 grid place-items-center rounded-full border border-border hover:border-rose transition"

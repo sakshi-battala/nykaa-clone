@@ -8,15 +8,28 @@ import {
 import { toast } from "sonner";
 import type { CartItem, Product } from "../types/product";
 
+// Internal helper to determine if two cart items have the identical variant shade selection
+const isSameItem = (
+  productId: number,
+  selectedShade: any,
+  itemToCompare: CartItem,
+) => {
+  return (
+    itemToCompare.product.id === productId &&
+    itemToCompare.selectedShade?.colour_name === selectedShade?.colour_name
+  );
+};
+
 interface AppState {
   cart: CartItem[];
   wishlist: Product[];
   cartOpen: boolean;
   theme: "light" | "dark";
   toggleTheme: () => void;
-  addToCart: (p: Product, qty?: number) => void;
-  removeFromCart: (id: number) => void;
-  updateQty: (id: number, qty: number) => void;
+  // Updated signatures to accept explicit shade tracking parameters
+  addToCart: (p: Product & { selectedShade?: any }, qty?: number) => void;
+  removeFromCart: (id: number, selectedShade?: any) => void;
+  updateQty: (id: number, qty: number, selectedShade?: any) => void;
   clearCart: () => void;
   toggleWishlist: (p: Product) => void;
   inWishlist: (id: number) => boolean;
@@ -62,28 +75,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
 
-  const addToCart = (p: Product, qty = 1) => {
+  const addToCart = (
+    pWithShade: Product & { selectedShade?: any },
+    qty = 1,
+  ) => {
+    const { selectedShade, ...product } = pWithShade;
+
     setCart((prev) => {
-      const found = prev.find((c) => c.product.id === p.id);
-      if (found)
+      // Find matches where both the product ID AND shade string names correspond
+      const found = prev.find((c) => isSameItem(product.id, selectedShade, c));
+
+      if (found) {
         return prev.map((c) =>
-          c.product.id === p.id ? { ...c, quantity: c.quantity + qty } : c,
+          isSameItem(product.id, selectedShade, c)
+            ? { ...c, quantity: c.quantity + qty }
+            : c,
         );
-      return [...prev, { product: p, quantity: qty }];
+      }
+
+      // Keep track of the specific chosen variant profile on this collection item
+      return [...prev, { product, quantity: qty, selectedShade }];
     });
-    toast.success("Added to cart", { description: p.name });
+
+    const displayTitle = selectedShade
+      ? `${product.name} (${selectedShade.colour_name})`
+      : product.name;
+
+    toast.success("Added to cart", { description: displayTitle });
     setCartOpen(true);
   };
-  const removeFromCart = (id: number) => {
-    setCart((prev) => prev.filter((c) => c.product.id !== id));
+
+  const removeFromCart = (id: number, selectedShade?: any) => {
+    setCart((prev) => prev.filter((c) => !isSameItem(id, selectedShade, c)));
     toast("Removed from cart");
   };
-  const updateQty = (id: number, qty: number) => {
-    if (qty <= 0) return removeFromCart(id);
+
+  const updateQty = (id: number, qty: number, selectedShade?: any) => {
+    if (qty <= 0) return removeFromCart(id, selectedShade);
     setCart((prev) =>
-      prev.map((c) => (c.product.id === id ? { ...c, quantity: qty } : c)),
+      prev.map((c) =>
+        isSameItem(id, selectedShade, c) ? { ...c, quantity: qty } : c,
+      ),
     );
   };
+
   const clearCart = () => setCart([]);
 
   const toggleWishlist = (p: Product) => {
