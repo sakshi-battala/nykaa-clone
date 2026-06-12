@@ -1,4 +1,5 @@
-import { RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 export interface FilterSidebarProps {
   categories: string[];
@@ -33,6 +34,10 @@ export function FilterSidebar({
   isFiltered,
   resetFilters,
 }: FilterSidebarProps) {
+  // State to manage collapse/expand visibility for Categories and Brands
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(true);
+  const [isBrandsOpen, setIsBrandsOpen] = useState(true);
+
   return (
     <div className="h-full flex flex-col gap-5 text-xs">
       <div className="flex items-center justify-between min-h-[24px]">
@@ -49,15 +54,8 @@ export function FilterSidebar({
         )}
       </div>
 
-      {/* Main Sidebar Section Custom Rounded Scrollbar view */}
-      <div
-        className="space-y-5 overflow-y-auto flex-1 pr-1.5
-        [&::-webkit-scrollbar]:w-1
-        [&::-webkit-scrollbar-track]:bg-transparent
-        [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20
-        [&::-webkit-scrollbar-thumb]:rounded-full
-        hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40"
-      >
+      {/* Main Sidebar Section */}
+      <div className="space-y-5 overflow-y-auto flex-1 pr-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* Sort Select */}
         <div>
           <h3 className="font-semibold mb-1.5 text-muted-foreground/80 tracking-wide uppercase text-[10px]">
@@ -76,66 +74,76 @@ export function FilterSidebar({
           </select>
         </div>
 
-        {/* Categories Nested Lists with custom micro scrolls */}
+        {/* Collapsible Categories Section */}
         <div>
-          <h3 className="font-semibold mb-1.5 text-muted-foreground/80 tracking-wide uppercase text-[10px]">
-            Categories
-          </h3>
-          <div
-            className="space-y-1 max-h-32 overflow-y-auto pr-1
-            [&::-webkit-scrollbar]:w-1
-            [&::-webkit-scrollbar-track]:bg-transparent
-            [&::-webkit-scrollbar-thumb]:bg-muted-foreground/10
-            [&::-webkit-scrollbar-thumb]:rounded-full"
+          <button
+            onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+            className="flex items-center justify-between w-full font-semibold mb-1.5 text-muted-foreground/80 tracking-wide uppercase text-[10px] hover:text-foreground transition-colors cursor-pointer"
           >
-            {categories.map((category) => (
-              <label
-                key={category}
-                className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors py-0.5"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedCategories.includes(category)}
-                  onChange={() => toggleCategory(category)}
-                  className="rounded border-input text-primary focus:ring-primary/10 size-3.5 accent-primary"
-                />
-                <span className="capitalize text-foreground/80 text-xs truncate">
-                  {category}
-                </span>
-              </label>
-            ))}
-          </div>
+            <span>Categories</span>
+            {isCategoriesOpen ? (
+              <ChevronUp className="size-3.5 text-muted-foreground/60" />
+            ) : (
+              <ChevronDown className="size-3.5 text-muted-foreground/60" />
+            )}
+          </button>
+
+          {isCategoriesOpen && (
+            <div className="space-y-1 pt-0.5 transition-all">
+              {categories.map((category) => (
+                <label
+                  key={category}
+                  className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors py-0.5"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(category)}
+                    onChange={() => toggleCategory(category)}
+                    className="rounded border-input text-primary focus:ring-primary/10 size-3.5 accent-primary"
+                  />
+                  <span className="capitalize text-foreground/80 text-xs truncate">
+                    {category}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Brands Nested Lists with custom micro scrolls */}
+        {/* Collapsible Brands Section */}
         <div>
-          <h3 className="font-semibold mb-1.5 text-muted-foreground/80 tracking-wide uppercase text-[10px]">
-            Brands
-          </h3>
-          <div
-            className="space-y-1 max-h-32 overflow-y-auto pr-1
-            [&::-webkit-scrollbar]:w-1
-            [&::-webkit-scrollbar-track]:bg-transparent
-            [&::-webkit-scrollbar-thumb]:bg-muted-foreground/10
-            [&::-webkit-scrollbar-thumb]:rounded-full"
+          <button
+            onClick={() => setIsBrandsOpen(!isBrandsOpen)}
+            className="flex items-center justify-between w-full font-semibold mb-1.5 text-muted-foreground/80 tracking-wide uppercase text-[10px] hover:text-foreground transition-colors cursor-pointer"
           >
-            {brands.map((brand) => (
-              <label
-                key={brand}
-                className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors py-0.5"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedBrands.includes(brand)}
-                  onChange={() => toggleBrand(brand)}
-                  className="rounded border-input text-primary focus:ring-primary/10 size-3.5 accent-primary"
-                />
-                <span className="text-foreground/80 text-xs truncate">
-                  {brand}
-                </span>
-              </label>
-            ))}
-          </div>
+            <span>Brands</span>
+            {isBrandsOpen ? (
+              <ChevronUp className="size-3.5 text-muted-foreground/60" />
+            ) : (
+              <ChevronDown className="size-3.5 text-muted-foreground/60" />
+            )}
+          </button>
+
+          {isBrandsOpen && (
+            <div className="space-y-1 pt-0.5 transition-all">
+              {brands.map((brand) => (
+                <label
+                  key={brand}
+                  className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors py-0.5"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedBrands.includes(brand)}
+                    onChange={() => toggleBrand(brand)}
+                    className="rounded border-input text-primary focus:ring-primary/10 size-3.5 accent-primary"
+                  />
+                  <span className="text-foreground/80 text-xs truncate">
+                    {brand}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Minimum Rating */}
